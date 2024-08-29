@@ -9,6 +9,7 @@ spec:
     revision: main
   output:
     image: image-registry.openshift-image-registry.svc:5000/ansible-builder-shipwright/ansible-builder-shipwright-example-ee:latest
+    pushSecret: pushsecret
   strategy:
     name: ansible-builder
     kind: ClusterBuildStrategy
