@@ -2,8 +2,8 @@
 version: 1
 
 build_arg_defaults:
-  EE_BASE_IMAGE: "registry.redhat.io/ansible-automation-platform/ee-minimal-rhel9:latest"
-  EE_BUILDER_IMAGE: "registry.redhat.io/ansible-automation-platform/ansible-builder-rhel9:latest"
+  EE_BASE_IMAGE: "registry.redhat.io/ansible-automation-platform/ee-minimal-rhel9:2.17.2-1"
+  EE_BUILDER_IMAGE: "registry.redhat.io/ansible-automation-platform/ansible-builder-rhel9:3.0.1-57"
 #ansible_config: "ansible.cfg"
 
 dependencies:
