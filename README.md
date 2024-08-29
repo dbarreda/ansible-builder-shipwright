@@ -11,66 +11,28 @@ Shipwright is a framework for building container images within Kubernetes. Ansib
 Clone the project repository repository
 
 ```
-git clone https://github.com/ansible/ansible-builder-shipwright-demo
+git clone https://github.com/dbarreda/ansible-builder-shipwright
 cd ansible-builder-shipwright
 ```
 
 ## Installation
 
-The installation and configurations can either be completed manually or automated through an Ansible playbook. THe following steps will be performed:
+The installation and configurations can either be completed manually or automated through an Ansible playbook. The following steps will be performed:
 
-1. Installation of Shipwright
-2. Creation of a `ClusterBuildStrategy` for building Ansible Execution Environments
-3. Creation of a new namespace to perform testing
-4. Creation of a new `Build` to leverage the _ClusterBuildStrategy_ and a sample Execution Environment
-5. Creation of policies to enable the Execution Environment build process
+Considerations: Given that Openshift Builds uses Openshift Pipelines, it will conflict with previous installations of it.
+
+1. Installation of Builds for Red Hat OpenShift Operator thru Openshift OperatorHub
+3. Creation of a `ClusterBuildStrategy` for building Ansible Execution Environments
+4. Creation of a new namespace to perform testing
+5. Creation of a new `Build` to leverage the _ClusterBuildStrategy_ and a sample Execution Environment
+6. Creation of policies to enable the Execution Environment build process
 
 Both installation scenarios will be outlined which account the above set of tasks.The steps associated with the manual installation will be detailed first to illustrate the actions that will be automated using Ansible.
 
-### Manual
-
-Shipwright can be installed using an Operator or by applying manifests.
 
 #### Installing Using the Operator
 
-The Shipwright Operator is available in OperatorHub and facilitates a seamless deployment into OpenShift.
-
-1. Deploy the Shipwright Operator:
-
-```
-kubectl apply -f resources/operator/olm
-```
-
-2. Wait until the Operator deployed and the `ShipwrightBuild` CR has been registered
-
-```
-kubectl wait --for condition=established crd/shipwrightbuilds.operator.shipwright.io
-```
-
-3. Create a new namespace called `shipwright-build` and create the `ShipwrightBuild` resource
-
-```
-kubectl apply -f resources/operator/instance
-```
-
-#### Installing Using Manifests
-
-Use the following steps to install any prerequisites followed by Shipwright from the manifests contained in the upstream project.
-
-1. Install Tekton/OpenShift Pipelines. In an OpenShift environment, this can be achieved in OperatorHub by installing either OpenShift Pipelines.
-2. Install Shipwright
-
-```
-kubectl apply --filename https://github.com/shipwright-io/build/releases/download/v0.9.0/release.yaml
-
-kubectl apply --filename https://github.com/shipwright-io/build/releases/download/v0.9.0/sample-strategies.yaml
-```
-
-Confirm the operator is running in the `shipwright-build` project
-
-```
-kubectl get pods -n shipwright-build
-```
+The Builds for Red Hat OpenShift Operator is available in OperatorHub.
 
 #### Custom Build Strategy
 
@@ -79,7 +41,7 @@ Install the `ansible-builder` `ClusterBuildStrategy` by cloning this repository 
 Add the `ClusterBuildStrategy`
 
 ```
-kubectl apply -f resources/clusterbuildstrategy/ansible-builder-clusterbuildstrategy.yml
+oc apply -f resources/clusterbuildstrategy/ansible-builder-clusterbuildstrategy.yml
 ```
 
 #### Example
@@ -89,41 +51,41 @@ To demonstrate how an Ansible Execution environment can be produced and publishe
 1. Create a new Namespace called `ansible-builder-shipwright` and change the current context into the namespace
 
 ```
-kubectl create namespace ansible-builder-shipwright
-kubectl config set-context --current --namespace=ansible-builder-shipwright
+oc create namespace ansible-builder-shipwright
+oc config set-context --current --namespace=ansible-builder-shipwright
 ```
 
 2. Register the Shipwright Build
 
 ```
-kubectl create -f example/ansible-builder-build.yml
+oc create -f example/ansible-builder-build.yml
 ```
 
 Confirm that the Build has been registered properly
 
 ```
-kubectl get builds.shipwright.io ansible-builder-example
+oc get builds.shipwright.io ansible-builder-example
 
-NAME                                        REGISTERED   REASON                        BUILDSTRATEGYKIND      BUILDSTRATEGYNAME   CREATIONTIME
-ansible-builder-example                     True         Succeeded                     ClusterBuildStrategy   ansible-builder     4h32m
+NAME                      REGISTERED   REASON      BUILDSTRATEGYKIND      BUILDSTRATEGYNAME   CREATIONTIME
+ansible-builder-example   True         Succeeded   ClusterBuildStrategy   ansible-builder     4s
 ```
 
 3. Create a _ServiceAccount_ called `ansible-builder-shipwright` that will be used to execute the build.
 
 ```
-kubectl apply -f resources/policies/serviceaccount.yml
+oc apply -f resources/policies/serviceaccount.yml
 ```
 
 4. Create a _Secret_ called `ansible-ee-images` containing credentials to access the Ansible Automation Platform images from the Red Hat Container Catalog or your authenticated registry by replacing your _username_ and _password_ and optionally _server_ by executing the following command:
 
 ```
-kubectl create secret docker-registry ansible-ee-images --docker-username=<username> --docker-password=<password> --docker-server=registry.redhat.io
+oc create secret docker-registry ansible-ee-images --docker-username=<username> --docker-password=<password> --docker-server=registry.redhat.io
 ```
 
 5. Patch the `ansible-builder-shipwright` _ServiceAccount_ with the `ansible-ee-images` _Secret_ so that the build will be able to access the protected images
 
 ```
-kubectl patch serviceaccount ansible-builder-shipwright  -p '{"secrets": [{"name": "ansible-ee-images"}]}'
+oc patch serviceaccount ansible-builder-shipwright  -p '{"secrets": [{"name": "ansible-ee-images"}]}'
 ```
 
 6. Grant Access to the `anyuid` SCC (OpenShift) to the `ansible-builder-shipwright` _ServiceAccount_
@@ -131,13 +93,13 @@ kubectl patch serviceaccount ansible-builder-shipwright  -p '{"secrets": [{"name
 Some of the supporting components within Shipwright require elevated capabilities  during the build process and when running on OpenShift and access to the `anyuid` Security Context Constraint is required. Grant the `ansible-builder-shipwright` ServiceAccount previously created access to the SCC by creating a _RoleBinding_ by executing the following command:
 
 ```
-kubectl apply -f resources/policies/anyuid-scc-rolebinding.yml
+oc apply -f resources/policies/anyuid-scc-rolebinding.yml
 ```
 
 7. In order for the `ansible-builder-shipwright` _ServiceAccount_ to be able to push to OpenShift's internal registry, execute the following command to create a new _Rolebinding_ called `ansible-builder-shipwright-image-builder`:
 
 ```
-kubectl apply -f resources/policies/image-builder-rolebinding.yml
+oc apply -f resources/policies/image-builder-rolebinding.yml
 ```
 
 ### Ansible
@@ -179,7 +141,7 @@ With the Shipwright components now configured, let's build a sample Execution En
 1. Start a new Build by creating a `BuildRun`
 
 ```
-kubectl create -f example/ansible-builder-buildrun.yml
+oc create -f example/ansible-builder-buildrun.yml
 ```
 
 2. Monitor the progress of the BuildRun
