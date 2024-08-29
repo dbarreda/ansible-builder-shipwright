@@ -1,4 +1,4 @@
-FROM registry.redhat.io/ansible-automation-platform-21/ansible-builder-rhel8:1.0
+FROM registry.redhat.io/ansible-automation-platform/ansible-builder-rhel9:3.0.1-57
 
 RUN microdnf install -y fuse-overlayfs buildah && \
     microdnf clean all && \
