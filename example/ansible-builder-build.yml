@@ -4,7 +4,7 @@ metadata:
   name: ansible-builder-example
 spec:
   source:
-    url: https://github.com/sabre1041/ansible-builder-shipwright
+    url: https://github.com/dbarreda/ansible-builder-shipwright
     contextDir: example-builder
     revision: main
   output:
